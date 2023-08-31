@@ -1,0 +1,628 @@
+## 1.Introduction
+
+<span id='1-introduction'></span>
+
+#### _1.1 Introduction to Uniswap V4_
+
+<span id='1-1-introduction-to-uniswap-v4'></span>
+
+In the world of decentralized finance, the names [Uniswap](https://uniswap.org/)
+and Automated Market Makers (AMMs) have likely graced your ears. Yet, if the
+realm of Uniswap remains an uncharted domain for you, brace yourself for an
+enlightening journey. At its core, Uniswap emerges as a fully decentralized
+protocol tailored for the provision of automated liquidity within the Ethereum
+ecosystem. To simplify, envision a decentralized exchange (DEX) powered by
+external liquidity providers who seamlessly contribute tokens to smart contract
+pools, thereby enabling users to engage in direct trading. This article embarks
+on an exploration of Uniswap V4's intricate facets, unveiling its transformative
+features and mechanisms that are poised to redefine the DeFi landscape as we
+know it.
+
+#### _1.2 Significance of Uniswap in the DeFi Ecosystem_
+
+<span id='1-2-significance-of-uniswap-in-the-defi-ecosystem'></span>
+
+For numerous years, Uniswap has stood as the quintessential benchmark for
+decentralized exchanges. Across various blockchain networks, it reigns supreme
+as the protocol with the most substantial _Total Value Locked (TVL)_, surging to
+an impressive $9.96 billion on the [Ethereum](https://ethereum.org/en/) main
+chain alone. The imminent arrival of Uniswap V4 heralds a watershed moment,
+destined to redefine the decentralized finance landscape. This upcoming
+iteration promises to be a game-changer, setting a new precedent that will
+resonate far and wide within the DeFi ecosystem.
+
+#### _1.3 Overview of Uniswap V4 codebase_
+
+<span id='1-3-overview-of-uniswap-v4-codebase'></span>
+
+The protocol as always is divided into two repositories: a core and a periphery.
+The most relevant contracts contained by this repositores are:
+
+- [v4-core](https://github.com/Uniswap/v4-core): contains all the core logic of
+  the protocol:
+  - PoolManager.sol: the huge contract containing all the pools.
+  - Fees.sol: contract for managing and collecting of pool fees.
+- [v4-periphery](https://github.com/Uniswap/v4-periphery): meant to be used by
+  developers other develpers who want to implement or innovate on top of the
+  protocol.
+  - BaseHook.sol: a base contract to develop a custom hook from.
+
+## 2.Key Features of Uniswap V4
+
+<span id='2-key-features-of-uniswap-v4'></span>
+
+#### _2.1 Singleton Contract_
+
+<span id='2-1-singleton-contract'></span>
+
+In a twist that defies convention, Uniswap V4 introduces an intriguing paradigm:
+all pools will find their abode within a single, unified contract. While this
+approach might appear counterintuitive, given the prevailing wisdom of
+dispersing protocol functions across distinct contracts, its brilliance lies in
+the realm of capital efficiency.
+
+Contrasting the current V3 iteration, where each swap triggers the movement of
+tokens through individual pool contracts, the V4's singleton contract
+facilitates internal swaps. This novel mechanism yields a remarkable reduction
+in gas costs for multihop swaps.
+
+##### _2.1.1 Trading through smart contracts_
+
+<span id='2-1-1-trading-though-smart-contracts'></span>
+
+Trading from _externally owned accounts (EOAs)_ will not be directly permissible
+within the singleton contract. Instead, traders will interact with the main
+contract through an intermediary contract. This architectural choice primarily
+serves efficiency objectives, as it empowers traders to invoke multiple
+functions within the main contract securely and with enhanced efficiency.
+
+This streamlined approach will occur within a single transaction, facilitated by
+a callback mechanism. The adjustment of internal balances will be achieved
+through the utilization of an _ERC1155_ token, ensuring seamless functionality.
+
+##### _2.1.2 Full contract locking_
+
+<span id='2-1-2-full-contract-locking'></span>
+
+In the previous version, a _reentrancy lock_ was used to protect contract from
+reentrancy attacks when calling a function. But this would happen in every
+function, so if traders wanted to call many functions concurrently, they would
+just lock and unlock the contract many times, wasting gas. The new contract will
+be locked entirely at the beginning of the interaction, and unlocked at the end.
+
+##### _2.1.3 Implementation example_
+
+<span id='2-1-3-implementation-example'></span>
+
+The contract is locked by calling the _lock_ function.
+
+```solidity
+  // PoolManager.sol
+    function lock(bytes calldata data) external
+    override returns (bytes memory result) {
+        lockData.push(msg.sender);
+
+        // the caller does everything in this callback,
+        // including paying what they owe via calls to settle
+        result = ILockCallback(msg.sender).lockAcquired(data);
+
+        if (lockData.length == 1) {
+            if (lockData.nonzeroDeltaCount != 0) revert CurrencyNotSettled();
+            delete lockData;
+        } else {
+            lockData.pop();
+        }
+    }
+```
+
+The calling contract will need to follow _ILockCallback_ implementation, here's
+an example:
+
+```solidity
+function lock(bytes calldata data) public payable {
+    poolManager.lock(data);
+}
+
+function lockAcquired(uint256, bytes calldata data) external returns (bytes memory) {
+    if (msg.sender == address(poolManager)) {
+        revert OnlyPoolManager();
+    }
+
+    (bool success, bytes memory returnData) = address(this).call(data);
+
+    if (success) return returnData;
+    if (returnData.length == 0) revert LockFailure();
+
+    assembly {
+        revert(add(returnData, 32), mload(returnData))
+    }
+}
+
+function swapTokens(
+    IPoolManager.PoolKey calldata poolKey,
+    IPoolManager.SwapParams calldata swapParams,
+    uint256 deadline
+) external returns (bytes memory) {
+    // old logic from the previous `lockAcquired`
+}
+```
+
+After the trader contract calls the _PoolManager_ this will call the caller back
+though the _lockAcquired_ function, where trader's desired calls happen.
+
+#### _2.2 Hooks_
+
+<span id='2-2-hooks'></span>
+
+Hooks allow developer to add their custom functionality on top of a pool, just
+like a plugin in a application. Developers will need to implement the hook
+standard provided by Uniswap.
+
+##### _2.2.1 Configuration_
+
+<span id='2-2-1-configuration'></span>
+
+Depending on the desired implementation, the hooks can be set up to be called in
+specific moments:
+
+- Before pool initialization
+- After pool initialization
+- Before every swap
+- After every swap
+- Before every donation
+- After every donation
+
+```solidity
+// BaeHook.sol
+    function beforeInitialize(address, PoolKey calldata, uint160, bytes calldata) external virtual returns (bytes4) {
+        // remove the revert and introduce desired implementation
+        revert HookNotImplemented();
+    }
+
+    function afterInitialize(address, PoolKey calldata, uint160, int24, bytes calldata)
+        external
+        virtual
+        returns (bytes4)
+    {
+        // remove the revert and introduce desired implementation
+        revert HookNotImplemented();
+    }
+
+    function beforeModifyPosition(address, PoolKey calldata, IPoolManager.ModifyPositionParams calldata, bytes calldata)
+        external
+        virtual
+        returns (bytes4)
+    {
+        // remove the revert and introduce desired implementation
+        revert HookNotImplemented();
+    }
+
+    function afterModifyPosition(
+        address,
+        PoolKey calldata,
+        IPoolManager.ModifyPositionParams calldata,
+        BalanceDelta,
+        bytes calldata
+    ) external virtual returns (bytes4) {
+        // remove the revert and introduce desired implementation
+        revert HookNotImplemented();
+    }
+
+    function beforeSwap(address, PoolKey calldata, IPoolManager.SwapParams calldata, bytes calldata)
+        external
+        virtual
+        returns (bytes4)
+    {
+        // remove the revert and introduce desired implementation
+        revert HookNotImplemented();
+    }
+
+    function afterSwap(address, PoolKey calldata, IPoolManager.SwapParams calldata, BalanceDelta, bytes calldata)
+        external
+        virtual
+        returns (bytes4)
+    {
+        // remove the revert and introduce desired implementation
+        revert HookNotImplemented();
+    }
+
+    function beforeDonate(address, PoolKey calldata, uint256, uint256, bytes calldata)
+        external
+        virtual
+        returns (bytes4)
+    {
+        // remove the revert and introduce desired implementation
+        revert HookNotImplemented();
+    }
+
+    function afterDonate(address, PoolKey calldata, uint256, uint256, bytes calldata)
+        external
+        virtual
+        returns (bytes4)
+    {
+        revert HookNotImplemented();
+    }
+```
+
+For a hook to be valid it it's functions must return their own function
+selector. A function selector equals the first 4 bytes of the hash of the
+function signature:
+
+```solidity
+function foo(uint256 dumbParam) public view returns(bytes4 selector){
+  selector = bytes4(keccak256("foo(uint256)"));
+}
+```
+
+##### _2.2.2 Using addresses as bitmaps_
+
+<span id='2-2-2-using-addresses-as-bitmaps'></span>
+
+_Bitmaps_ are very handy in solidity since they allow contracts to pack data in
+a efficient way to read, using binary operators. In this case, hooks addresses
+themselves will be used to check hooks configuration. The reasons behind this is
+that reading from an address from a smart contract is very cheap since it's a
+context value.
+
+```solidity
+//libraries/Hooks.sol
+    // if the first bit of the address in binaryis 1,
+    // the hook is meant to be called to beforeInitialize()
+    // binary representation(160 bits):
+    // 1000000000000000000000000000000000000000000000000000000000000000000000000000
+    uint256 internal constant BEFORE_INITIALIZE_FLAG = 1 << 159;
+    // second bit for after initialize()
+    // 0100000000000000000000000000000000000000000000000000000000000000000000000000
+    uint256 internal constant AFTER_INITIALIZE_FLAG = 1 << 158;
+    //...
+    uint256 internal constant BEFORE_MODIFY_POSITION_FLAG = 1 << 157;
+    uint256 internal constant AFTER_MODIFY_POSITION_FLAG = 1 << 156;
+    uint256 internal constant BEFORE_SWAP_FLAG = 1 << 155;
+    uint256 internal constant AFTER_SWAP_FLAG = 1 << 154;
+    uint256 internal constant BEFORE_DONATE_FLAG = 1 << 153;
+    uint256 internal constant AFTER_DONATE_FLAG = 1 << 152;
+
+```
+
+For example, if an address' binary representation looks like
+_11010101010101010101010101..._ , this hook will use the next functions:
+_beforeInitialize,afterInitialize, beforeModifyPosition,beforeSwap_...
+
+We can see that when using a pool in the main contract(_PoolManager_) the
+contract always checks what functions should call to the hook of that specific
+pool:
+
+```solidity
+// IPoolManager
+    function modifyPosition(
+        PoolKey memory key,
+        IPoolManager.ModifyPositionParams memory params,
+        bytes calldata hookData
+    ) external override noDelegateCall onlyByLocker returns (BalanceDelta delta) {
+      // check if it should calling
+        if (key.hooks.shouldCallBeforeModifyPosition()) {
+            if (
+              // checks that the function returns it's selector as mentioned before
+                key.hooks.beforeModifyPosition(msg.sender, key, params, hookData)
+                    != IHooks.beforeModifyPosition.selector
+            ) {
+                revert Hooks.InvalidHookResponse();
+            }
+        }
+        //...
+```
+
+##### _2.2.3 Deploying a hook with an address that meets this requirements_
+
+<span id='2-2-3-deploying a hook with an address that meets this requirements'></span>
+
+Ensuring the congruence of a hook's binary address representation with its
+configuration is a pivotal concern. But how can we achieve this assurance
+without resorting to a trial-and-error barrage of deployments? Enter Solidity's
+ingenious solution: the _CREATE2_ opcode. This opcode empowers a smart contract
+to deterministically deploy another contract, leveraging a cryptographic
+salt—essentially a 32-byte seed that computes the forthcoming address.
+
+The beauty of this approach lies in its predictability; the new address can be
+computed even before the deployment is executed, contingent solely on
+identifying the correct seed. For an in-depth exploration of this concept, the
+implementation of _CREATE2_ in the
+[Solady](https://github.com/Vectorized/solady/blob/main/src/utils/CREATE3.sol)
+library offers a compelling resource.
+
+#### _2.3 Infinite Pools per Pair_
+
+<span id='2-3-infinite-pools-per-pair'></span>
+
+In the previous V3 model iteration, a singular pool was allocated for each pair.
+However, the current contract introduces a dynamic paradigm, enabling
+individuals to craft custom pools tailored to specific pairs. This innovation
+heralds a diverse array of pools, each unique to its corresponding pair and
+distinguished by custom hooks and distinct fee structures.
+
+#### _2.4 Native ETH Support_
+
+<span id='2-4-native-eth-support'></span>
+
+For some reason, the V3 version removed the native ETH support, to only support
+_ERC20_ swaps. This forces traders to wrap their ETH into WETH ERC20 contract or
+viceversa before a swap implying ETH. Considering this problem de developers
+team decided to add native ETH support back.
+
+## 3.Implications for Traders and Liquidity Providers
+
+<span id='3-implications-for-traders-and-liquidity-providers'></span>
+
+#### _3.1 Benefits and Drawbacks of AMMs_
+
+<span id='3-1-benefits-and-drawbacks-of-amms'></span>
+
+##### _3.1.1 Liquidity concentration_
+
+<span id='3-1-1-liquidity-concentration'></span>
+
+Uniswap V4 will seamlessly retain the concentrated liquidity mechanism
+introduced in V3. This empowers liquidity providers to infuse liquidity within
+specific price ranges, a strategic approach stemming from the insight that the
+entire price curve is seldom utilized. Analogous to leveraging, this tactic can
+yield augmented profits or amplified losses, often referred to as a more
+substantial _impermanent loss_, compared to the broader spectrum liquidity
+provision.
+
+For a comprehensive understanding of the concept of concentrated liquidity, I
+recommend delving into this enlightening
+[article](https://medium.com/pontem-network/concentrated-liquidity-beginner-guide-to-uniswap-v3-liquidity-book-3ecf806f2b10)..
+The article elucidates the nuances of this approach, providing valuable insights
+into the inner workings of Uniswap V3's liquidity book.
+
+##### _3.1.2 Impermanent loss_
+
+<span id='3-1-2-impermanent-loss'></span>
+
+In the realm of _Constant Product AMMs_, liquidity providers participate by
+adding liquidity to a specific pair through the deposit of an amount of token A,
+proportionally balanced with an amount of token B, as dictated by their
+prevailing price relationship. Over the course of their liquidity provision,
+market prices may undergo fluctuations, leading to corresponding shifts in the
+reserve quantities of token A and token B.
+
+Upon the eventual withdrawal of liquidity, both token A and token B are
+retrieved. However, the proportions between these two token amounts may have
+evolved due to alterations in the reserves. Consequently, even though the
+liquidity provider reclaims their initial shares of liquidity along with the
+accumulated fees—thus accruing more tokens than before—there exists the
+possibility of incurring a loss when measured in total USD value.
+
+For those eager to explore this concept further, I recommend delving into this
+insightful
+[article](https://medium.com/coinmonks/impermanent-loss-what-is-it-and-when-does-this-phenomenon-appear-df9b29212509).
+The article delves deeper into the intricacies of impermanent loss, shedding
+light on its occurrence and implications.
+
+#### _3.2 Enhanced pools for traders_
+
+<span id='3-2-enhanced-pools-for-traders'></span>
+
+This are some interestig pool implementations proposed by Uniswap:
+
+##### _3.3.1 TWAMM_
+
+<span id='3-3-1-twamm'></span>
+
+Introducing TWAMM, or _Time Weighted Average Market Maker_ – an ingenious
+solution offering traders an efficient and cost-effective method for executing
+substantial swaps. Tackling a historical challenge for traders, TWAMM emerges as
+a viable alternative. Traditional methods, such as conducting large transactions
+within a single pool, tend to yield significant impermanent losses. On the other
+hand, fragmenting orders across multiple Automated Market Makers (AMMs) can
+result in exorbitant fee payments.
+
+The underpinning idea draws inspiration from the concept of _Time Weighted
+Average Price_ (TWAP) that traders employ. In the TWAP strategy, periodic
+selling is executed to achieve a desired average price over a specific duration.
+
+TWAMMs provide users the ability to dissect their sell orders into an infinite
+series of smaller segments. A noteworthy feature is that all orders seeking to
+sell the same asset within a particular pool are executed concurrently by the
+TWAMM contract. This seamless orchestration is automatically facilitated through
+a hook. The hook oversees the execution of required sell actions within the
+previously mentioned _afterSwap()_ and _afterModifyPosition()_ special
+functions. These functions are triggered periodically by the pool.
+
+For further reading : [link](https://www.paradigm.xyz/2021/07/twamm)
+
+##### _3.3.2 Limit orders_
+
+<span id='3-3-2-limit-orders'></span>
+
+Users will be able to place limit orders using a hook. This is a game changer
+when it comes to trading. The defi landscape is catching up the centralised
+finance day by day.
+
+##### _3.3.3 Full range liquidity_
+
+<span id='3-3-3-full-range-liquidity'></span>
+
+Regrettably, many inexperienced liquidity providers faced substantial
+impermanent losses in the prior version, primarily due to the concentrated
+liquidity feature. To address this concern, the introduced hook offers a
+solution: the ability to establish liquidity positions that encompass the entire
+price range. While this adjustment might lead to a decrease in profits for
+favorable positions, it undeniably serves as a mitigation strategy against
+potential risks.
+
+##### _3.3.4 Geomean oracle_
+
+<span id='3-3-4-geomean-oracle'></span>
+
+This hook will allow pools to work as a decentralised oracle themselves. This
+kind of oracles will definitely be very useful for the defi ecosystem, including
+traders, yeild farmers, and other contracts implementing Uniswap V4.
+
+##### _3.3.5 Volatility oracles_
+
+<span id='3-3-5-volatility-oracles'></span>
+
+Dynamic fees will definitely be a thing in Uniswap V4. Volatility oracles just
+sets the pool fees based on the volatility of it.
+
+#### _3.4 Uniswap X_
+
+<span id='3-4-uniswap-x'></span>
+
+"UniswapX is an ERC20 swap settlement protocol that provides swappers with a
+gasless experience, MEV protection, and access to arbitrary liquidity sources.
+Swappers generate signed orders which specify the specification of their swap,
+and fillers compete using arbitrary fill strategies to satisfy these orders." -
+Uniswap docs.
+
+Just for a brief overview, this means that traders will be able to perform swaps
+without paying any gas when using the dapp. Furthermore, failed transactions
+won't be charged to traders. This could be the beginning of the next web3
+generation.
+
+Full detailed overview in the Uniswap
+[documentation](https://docs.uniswap.org/contracts/uniswapx/overview)
+
+## 4.Future Implications and Challenges
+
+<span id='4-future-implications-and-challenges'></span>
+
+#### _4.1 Potential Competition and Innovations in Response_
+
+<span id='4-1-potential-competition-and-innovation-in-response'></span>
+
+Given this new powerfull infraestructure, the spectrum of potential pool
+variations is boundless. As these pools multiply exponentially, a dynamic
+landscape of competition for liquidity will naturally emerge. This competition
+serves as a catalyst, propelling developers to craft pools that transcend
+convention, embodying both innovation and profitability.
+
+In this environment teeming with potential, developers are poised to illuminate
+the DeFi sphere with their creativity. This juncture marks a golden opportunity
+for their ingenuity to take center stage. As they conjure inventive and
+appealing pool structures, the entire ecosystem stands to benefit from enhanced
+liquidity options, fostering a thriving DeFi landscape.
+
+#### _4.2 Security and Smart Contract Audits_
+
+<span id='4-2-security-and-smart-contract-audits'></span>
+
+One of the major drawbacks associated with UniswapV4 pertains to its
+concentration of liquidity within a single contract. This concentration creates
+an attractive opportunity for potential hackers or malicious actors, often
+referred to as "_black hats_," who might attempt to exploit vulnerabilities in
+the system.
+
+Given this security vulnerability, it becomes crucial to invest a significant
+amount of time in comprehensive audits and bug bounty programs. These measures
+are necessary to bolster the platform's security and ensure that potential risks
+are mitigated effectively. By subjecting UniswapV4 to thorough security
+assessments and incentivizing the community to actively participate in
+identifying and rectifying vulnerabilities, steps can be taken to prevent
+adverse events from occurring.
+
+## 5.Conclusion
+
+<span id='5-conclusion'></span>
+
+As we conclude our journey through the intricate web of Uniswap V4's features
+and implications, a new horizon of possibilities opens up for the decentralized
+finance landscape. Uniswap V4 represents a paradigm shift, introducing
+innovative mechanisms that challenge existing norms and elevate the potential
+for traders, liquidity providers, and developers alike.
+
+The introduction of a singleton contract architecture brings forth efficiency
+gains, paving the way for multihop swaps with reduced gas costs. Hooks, as
+customizable and extendable components, invite developers to shape the ecosystem
+with tailored solutions, giving birth to concepts like the Time Weighted Average
+Market Maker (TWAMM) and decentralized oracles.
+
+This transformation also ushers in a realm of opportunities and challenges.
+Developers are poised to shine as they compete to craft alluring and productive
+pools, driving innovation to new heights. However, the concentration of
+liquidity within a single contract raises security concerns, necessitating a
+rigorous approach to audits and bug bounties to safeguard the ecosystem against
+potential vulnerabilities.
+
+As Uniswap V4 takes center stage in the DeFi arena, it's evident that the
+decentralized landscape is undergoing a remarkable evolution. The collaborative
+efforts of developers, traders, liquidity providers, and security experts will
+shape the future of DeFi, offering greater flexibility, efficiency, and
+accessibility for all participants. With boundless possibilities ahead, we stand
+on the cusp of a transformative era, where Uniswap V4 plays a pivotal role in
+shaping the decentralized financial ecosystem for years to come.
+
+## 6.Glossary
+
+<span id='6-glossary'></span>
+
+#### _6.1 Key Terms and Concepts_
+
+<span id='6-1-key-terms-and-concepts'></span>
+
+**Automated Market Maker (AMM)**: A decentralized exchange protocol that enables
+users to trade cryptocurrencies without relying on traditional order books. AMMs
+utilize smart contracts and liquidity pools to determine asset prices and
+execute trades automatically.
+
+**Concentrated Liquidity**: A mechanism introduced in Uniswap V3 and continued
+in V4, where liquidity providers concentrate their assets within specific price
+ranges, optimizing capital efficiency while potentially exposing them to
+impermanent loss.
+
+**Decentralized Finance (DeFi)**: A movement that aims to recreate traditional
+financial services using blockchain technology and smart contracts. DeFi
+platforms provide decentralized alternatives to traditional financial
+intermediaries, such as banks, brokers, and exchanges.
+
+**ERC20**: Ethereum Request for Comments 20, a widely adopted standard for
+fungible tokens on the Ethereum blockchain. ERC20 tokens are interchangeable and
+can represent various assets, from cryptocurrencies to digital assets.
+
+**Gas Costs**: In Ethereum, gas refers to the computational effort required to
+execute operations or transactions on the blockchain. Gas costs are denominated
+in Ether (ETH) and are necessary to incentivize miners to process transactions.
+
+**Impermanent Loss**: A potential loss experienced by liquidity providers in
+automated market maker pools due to the changing relative prices of assets
+within the pool compared to holding those assets outside the pool.
+
+**Liquidity Providers**: Individuals or entities that contribute assets to
+liquidity pools on AMMs. In return, they receive a share of trading fees and
+incentives from the protocol.
+
+**Singleton Contract**: In Uniswap V4, a design choice where all pools are
+managed within a single contract. This architecture optimizes gas efficiency and
+facilitates multihop swaps.
+
+**Smart Contract Audits**: Comprehensive reviews conducted by security experts
+to identify vulnerabilities and potential risks in smart contracts. Audits are
+crucial to ensure the security and reliability of protocols and applications.
+
+**Time Weighted Average Market Maker (TWAMM)**: An innovative trading mechanism
+introduced in Uniswap V4 that allows users to execute large trades over time,
+minimizing the impact on prices and providing protection against front-running
+and other forms of market manipulation.
+
+**Total Value Locked (TVL)**: The total amount of assets locked within a
+decentralized finance protocol. TVL is a common metric used to assess the
+adoption and growth of DeFi platforms.
+
+**Vulnerabilities**: Weaknesses or flaws in software code that could be
+exploited by attackers to compromise the security or functionality of a system.
+Vulnerabilities in smart contracts can lead to financial losses and other
+undesirable outcomes.
+
+## 7.References
+
+<span id='7-references'></span>
+
+#### _7.1 List of Sources and Further Reading_
+
+<span id='7-1-list-of-sources-and-further-reading'></span>
+
+- [https://github.com/Uniswap/v4-periphery](https://github.com/Uniswap/v4-periphery)
+- [https://github.com/Uniswap/v4-core](https://github.com/Uniswap/v4-core)
+- [https://blog.uniswap.org/uniswap-v4](https://blog.uniswap.org/uniswap-v4)
+- [https://soliditydeveloper.com/uniswap4](https://soliditydeveloper.com/uniswap4)
