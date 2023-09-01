@@ -1,8 +1,16 @@
-import { type FC } from 'react'
+'use client'
+import classNames from 'classnames'
+import { ComponentPropsWithoutRef, type FC } from 'react'
 import { BsLink45Deg } from 'react-icons/bs'
 import { FiMail, FiTwitter } from 'react-icons/fi'
 
-export const Share: FC = () => {
+interface Props extends ComponentPropsWithoutRef<'span'> {
+  justifyIcons: string
+  className: string
+}
+
+export const Share: FC<Props> = (props: Props) => {
+  const { justifyIcons, className } = props
   const handleCopyClick: any = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault()
     const textToCopy = window.location.href
@@ -28,9 +36,13 @@ export const Share: FC = () => {
     window.open(twitterUrl, '_blank')
   }
   return (
-    <>
+    <span className={classNames('', [className])}>
       <h3 className='sm:text-md mb-2'>Share this article</h3>
-      <div className='mb-4 flex items-center justify-end space-x-2 text-xl'>
+      <div
+        className={classNames('mb-4 flex items-center  space-x-2 text-xl', [
+          justifyIcons
+        ])}
+      >
         <BsLink45Deg
           onClick={handleCopyClick}
           className='cursor-pointer hover:text-secondary'
@@ -41,6 +53,6 @@ export const Share: FC = () => {
         />
         <FiMail className='cursor-pointer hover:text-secondary' />
       </div>
-    </>
+    </span>
   )
 }

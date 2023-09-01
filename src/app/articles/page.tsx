@@ -39,7 +39,7 @@ export const metadata: Metadata = {
 
 export default function Articles(): JSX.Element {
   return (
-    <section className='flex py-16'>
+    <section className='flex sm:py-16'>
       <ul className='prose prose-sm dark:prose-invert'>
         {publications.map((post: Post, index: number) => (
           <li key={uniqueReactKey(post.title, index)}>

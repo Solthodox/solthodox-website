@@ -13,7 +13,7 @@ export const ArticleSidebar: FC<Props> = props => {
 
   return (
     <aside className={classNames('pl-4 text-right', [className])}>
-      <Share />
+      <Share className='' justifyIcons='justify-end' />
       <Contents contents={contents} />
     </aside>
   )
