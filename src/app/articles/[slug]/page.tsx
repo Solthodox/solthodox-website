@@ -5,6 +5,7 @@ import { publications } from '../../../../statics'
 import { type Metadata } from 'next'
 import { dynamicMetadata } from '@/utils'
 import { ArticleSidebar } from '@/app/components/article-sidebar'
+import { Share } from '@/app/components/article-sidebar/share'
 
 interface Post {
   title: string
@@ -38,12 +39,15 @@ export default function Page({ params }: { params: { slug: string } }) {
     p => p.title === parsed_slug
   ) as unknown as Post
   return (
-    <div className='flex py-16'>
-      <Post statics={statics} />
-      <ArticleSidebar
-        className='hidden sm:block'
-        contents={statics.contents as string[]}
-      />
-    </div>
+    <section>
+      <div className='mb-12 flex sm:py-16'>
+        <Post statics={statics} />
+        <ArticleSidebar
+          className='hidden sm:block'
+          contents={statics.contents as string[]}
+        />
+      </div>
+      <Share className=' sm:hidden' justifyIcons='justify-start' />
+    </section>
   )
 }

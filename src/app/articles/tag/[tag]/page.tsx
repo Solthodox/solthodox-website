@@ -26,7 +26,7 @@ export default function Tag({
     p.metadata.tags?.includes(parsed_tag)
   ) as unknown as Post
   return (
-    <section className='py-16'>
+    <section className='sm:py-16'>
       <h1 className='text-2xl font-bold'>Tag: {parsed_tag}</h1>
       <ul className='prose prose-sm  dark:prose-invert'>
         {posts.map((post: Post, index: number) => (
