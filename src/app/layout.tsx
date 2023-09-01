@@ -6,6 +6,7 @@ import { Poppins } from 'next/font/google'
 import Avatar from '../../public/avatar.png'
 import { type Metadata } from 'next'
 import { pages } from '../../statics'
+import { Analytics } from '@vercel/analytics/react'
 
 const poppins = Poppins({
   subsets: ['latin'],
@@ -54,6 +55,7 @@ export default function RootLayout(props: Props) {
       <Providers>
         <body className='h-full min-h-full  scroll-smooth border-t-4 border-secondary bg-primary-light font-poppins text-primary-dark dark:bg-primary-dark  dark:text-primary-light '>
           <Main>{children}</Main>
+          <Analytics />
         </body>
       </Providers>
     </html>
