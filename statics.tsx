@@ -53,7 +53,7 @@ export const publications: Post[] = [
     title: 'Uniswap V4 deep-dive',
     metadata: { date: 'Aug 23, 2023', tags: ['technical', 'defi'] },
     description:
-      'Uniswap V4 stands on the horizon, poised to captivate the DeFi community with its revolutionary advancements. For enthusiasts deeply engrossed in the realm of decentralized finance, a comprehensive grasp of the intricate features and mechanisms underlying this upgrade is nothing short of essential. From the innovative concept of hooks to the dynamic fee system, contract singleton, and the ERC1155 flash accounting...',
+      'Uniswap V4 stands on the horizon, poised to captivate the DeFi community with its revolutionary advancements. For enthusiasts deeply engrossed in the realm of decentralized finance, a comprehensive grasp of the intricate features and mechanisms underlying this upgrade is nothing short of essential. From the innovative concept of hooks to the dynamic fee system, contract singleton, and the ERC1155 accounting...',
     imgSourceLight: UnicornLight,
     imgSourceDark: UnicornDark,
     mdx: <UniswapV4DeepDive />,

@@ -43,8 +43,7 @@ The most relevant contracts contained by this repositores are:
   - PoolManager.sol: the huge contract containing all the pools.
   - Fees.sol: contract for managing and collecting of pool fees.
 - [v4-periphery](https://github.com/Uniswap/v4-periphery): meant to be used by
-  developers other develpers who want to implement or innovate on top of the
-  protocol.
+  other develpers who want to implement or innovate on top of the protocol.
   - BaseHook.sol: a base contract to develop a custom hook from.
 
 ## 2.Key Features of Uniswap V4
@@ -78,7 +77,8 @@ functions within the main contract securely and with enhanced efficiency.
 
 This streamlined approach will occur within a single transaction, facilitated by
 a callback mechanism. The adjustment of internal balances will be achieved
-through the utilization of an _ERC1155_ token, ensuring seamless functionality.
+through this new system, where the caller contract can withdraw the internal
+balance at the end of the interaction calling the _settle_ function.
 
 ##### _2.1.2 Full contract locking_
 
@@ -348,6 +348,21 @@ For some reason, the V3 version removed the native ETH support, to only support
 _ERC20_ swaps. This forces traders to wrap their ETH into WETH ERC20 contract or
 viceversa before a swap implying ETH. Considering this problem de developers
 team decided to add native ETH support back.
+
+#### _2.5 ERC1155 Liquidity Accounting_
+
+<span id='2-5-erc1155-accounting'></span>
+
+Here's an improved version of the Markdown text:
+
+Previously, our method for accounting liquidity provider positions involved
+using an ERC20 token that was minted to the required amount for each provider.
+Each pool had its dedicated ERC20 token representing a liquidity position within
+that specific pool. However, we've undergone significant changes. With all pools
+now consolidated into a single, unified smart contract, we have adopted a new
+approach using _ERC1155_ tokens. These tokens enable the management of multiple
+positions within a single token, allowing us to efficiently oversee all
+liquidity provider positions from a single, centralized smart contract.
 
 ## 3.Implications for Traders and Liquidity Providers
 

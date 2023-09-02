@@ -23,7 +23,7 @@ export const Post: FC<Props> = props => {
     <>
       <article
         className={classNames(
-          'underline-secondary prose prose-sm overflow-auto dark:prose-invert',
+          'underline-secondary prose prose-sm overflow-auto text-justify dark:prose-invert',
           [className]
         )}
       >
