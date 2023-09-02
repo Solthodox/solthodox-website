@@ -73,6 +73,7 @@ export const publications: Post[] = [
       '2.2.3 Deploying a hook with an address that meets this requirements',
       '2.3 Infinite Pools per Pair',
       '2.4 Native ETH Support',
+      '2.5 ERC1155 Liquidity Accounting',
       '3.Implications for Traders and Liquidity Providers',
       '3.1 Benefits and Drawbacks of AMMs',
       '3.1.1 Liquidity concentration',
