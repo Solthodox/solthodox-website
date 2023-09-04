@@ -10,7 +10,7 @@ export const Footer: FC = () => {
         <Link href='https://github.com/Solthodox' target='blank'>
           <FiGithub />
         </Link>
-        <Link href='/'>
+        <Link href='https://twitter.com/solthodox'>
           <FiTwitter />
         </Link>
         <Link href='/'>
