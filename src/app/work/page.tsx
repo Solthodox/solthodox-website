@@ -25,10 +25,8 @@ export const metadata: Metadata = {
 }
 export default function Home(): JSX.Element {
   return (
-    <>
-      <section className='sm:py-16'>
-        <Post statics={pages.work} />
-      </section>
-    </>
+    <section className=' sm:py-16'>
+      <Post statics={pages.work} />
+    </section>
   )
 }

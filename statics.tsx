@@ -40,7 +40,7 @@ export const pages = {
   work: {
     title: 'Work',
     metadata: { date: 'Aug 23, 2023', tags: null },
-    description: `Solthodox's work so far`,
+    description: `Some of Solthodox's projects  `,
     imgSourceLight: null,
     imgSourceDark: null,
     mdx: <Work />,
