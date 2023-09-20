@@ -1,10 +1,13 @@
 import { ReactElement } from 'react'
 import UniswapV4DeepDive from './src/content/uniswapv4-deep-dive.mdx'
+import ExploringBitManipulationInSmartContracts from './src/content/exploring-bit-manipulation-in-smart-contracts.mdx'
 import About from './src/content/about.mdx'
 import Work from './src/content/work.mdx'
 import Experience from './src/content/experience.mdx'
 import UnicornLight from '/public/unicorn-light.png'
 import UnicornDark from '/public/unicorn-dark.png'
+import MagicianLight from '/public/magician-light.png'
+import MagicianDark from '/public/magician-dark.png'
 
 import { StaticImageData } from 'next/image'
 interface Post {
@@ -93,6 +96,30 @@ export const publications: Post[] = [
       '6.1 Key Terms and Concepts',
       '7.References',
       '7.1 List of Sources and Further Reading'
+    ]
+  },
+  {
+    title: 'Exploring bit manipulation in smart contracts',
+    metadata: { date: 'Sept 18, 2023', tags: ['technical', 'solidity'] },
+    description:
+      'Discover the fundamentals of bits in Solidity and how they play a pivotal role in efficient data storage and manipulation. This article breaks down complex concepts into easy-to-understand sections, guiding you through essential bitwise operations, compact data storage techniques, and real-world gas optimization strategies.',
+    imgSourceLight: MagicianLight,
+    imgSourceDark: MagicianDark,
+    mdx: <ExploringBitManipulationInSmartContracts />,
+    contents: [
+      '1.Introduction',
+      '2.Understanding Bits in Solidity',
+      '2.1.Bits explained',
+      '2.2.Why Bit Manipulation in Solidity',
+      '3.Basic Bitwise Operations',
+      '3.1.Bitwise & and | oeprations',
+      '3.2.Bitwise << and >> oeprations',
+      '3.3.Bitwise ~ operatoions',
+      '4.Bit Manipulation Techniques',
+      '4.1.Accessing a specific set of bits',
+      '4.2.Modifying a specific set of bits',
+      '5.Conclusion',
+      '6.References:'
     ]
   }
 ]

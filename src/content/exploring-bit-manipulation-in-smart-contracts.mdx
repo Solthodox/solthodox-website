@@ -1,0 +1,321 @@
+## 1.Introduction
+
+<span id='1-introduction'></span>
+
+In the realm of computer storage, bits and bytes are the fundamental building
+blocks. Understanding how values are stored in binary is crucial for efficient
+data manipulation, and this knowledge is equally vital in the Ethereum Virtual
+Machine (EVM).
+
+Bit manipulation, or bitwise operations, plays a pivotal role in optimizing
+smart contract development. By harnessing the power of binary operators,
+developers can efficiently pack data, reducing gas costs, and enhancing the
+performance of their contracts.
+
+## 2. Understanding Bits in Solidity
+
+<span id='2-understanding-bits-in-solidity'></span>
+
+#### _2.1 Bits explained_
+
+<span id='2-1-bits-explained'></span>
+
+If you're not well-versed in the world of bits, it's time to dive in. In
+essence, bits are individual storage units that can be in one of two states: set
+(1) or unset (0).Just think of them as a row of light bulbs that are either on
+or off. With this logic, we can store values in their binary representation, a
+set of 0(unset) and 1(set). Just like bits storage, binary numbers are read from
+right to left. If you're new to binary numbers, you can check out this
+informative
+[article](https://medium.com/@syedatasneem958/number-systems-conversions-49f8144c8cf2)
+for a detailed explanation.
+
+For example, the binary representation of the number 9 is "1001." This can be
+stored by setting the first and fourth bits to 1. This binary storage system is
+versatile, allowing us to store not only numeric values but also strings,
+hexadecimal numbers, arrays, and more. A group of 8 bits is referred to as a
+"byte." For instance, the number 255, represented in binary as "11111111,"
+occupies 1 byte.
+
+In Solidity, we encounter statically typed values, which means that for values
+with fixed sizes, their maximum size is known from the outset::
+
+- uint/int*n*: Here, "n" denotes the number of bits the value occupies. For
+  instance, "uint256" occupies 256 bits. Unlike some other languages, such as
+  Rust, which restrict numeric values to a maximum of 32 bits, Solidity provides
+  native support for 256-bit numeric values. This allows for the storage of
+  large values.
+- bytes*n* : In this case, "n" represents the number of bytes the value
+  occupies. "bytes32" takes up 32 bytes (equivalent to 256 bits).
+- bool : Booleans take up only 1 byte. While it could technically take just 1
+  bit (with 1 for true and 0 for false), computers are more efficient at reading
+  whole bytes.
+
+Dynamic values, on the other hand, can occupy varying amounts of space, such as
+arrays, strings, and bytes.
+
+It's important to note that EVM storage is organized in 32-byte slots, making it
+more efficient for the EVM to read two values within the same slot than separate
+ones. Henceforth, we'll refer to a 32-byte space as a "word."
+
+### 2.2 Why Bit Manipulation in Solidity?
+
+<span id='2-2-why-bit-manipulation-in-solidity'></span>
+
+Now, let's delve deeper into the advantages of bit manipulation in Solidity:
+
+- **Efficient Storage Packing**: Bit-level manipulation empowers developers to
+  tailor the maximum bit size of their values and pack them efficiently into a
+  single word. While using a struct is an option, it necessitates the use of
+  Solidity's default types with preset sizes, which may not always align with
+  the most convenient sizes for our values.
+
+- **Gas Savings**: A more efficient storage layout translates to more efficient
+  data retrieval, resulting in reduced gas costs when accessing storage.
+  Additionally, employing binary operators for arithmetic operations can also
+  lead to reduced gas costs. This efficiency stems from the fact that computers
+  are inherently more adept at handling operations at the bit level.
+
+A shining example of these advantages can be found in the AAVE v2 protocol's
+"ReserveConfigurationMap," a bitmap where bit manipulation optimizes data
+storage:
+
+```solidity
+ struct ReserveConfigurationMap {
+    //bit 0-15: LTV
+    //bit 16-31: Liq. threshold
+    //bit 32-47: Liq. bonus
+    //bit 48-55: Decimals
+    //bit 56: Reserve is active
+    //bit 57: Reserve is frozen
+    //bit 58: Borrowing is enabled
+    //bit 59: Stable rate borrowing enabled
+    //bit 60-63: Reserved
+    //bit 64-79: Reserve factor
+    uint256 data;
+  }
+```
+
+Here, the AAVE protocol stores all data related to reserve configuration in a
+single word, a "bitmap." This bitmap allows complete customization of the sizes
+of internal values, such as "LTV" occupying the first 16 bits, boolean values
+("Reserve is active," "Reserve is frozen," "Borrowing is enabled," etc.), which
+now only occupy 1 bit each, and the 4-bit value "Reserved." This tight packing
+enables the EVM to read just once (1 slot) to access all these values
+efficiently. To read and write values directly from the bitmap, binary operators
+and bit masks come into play.
+
+## 3. Basic Bitwise Operations
+
+<span id='3-basic-bitwise-operations'></span>
+
+Let's now explore some of the fundamental binary operations:
+
+#### _3.1 Bitwise AND ("&") and OR ("|") Operations_
+
+<span id='3-1-bitwise-&-and-|-operations'></span>
+
+The "&" operator takes two numbers as inputs and identifies the bit positions
+where both numbers have a 1 (hence its name, "and"). It returns a new value by
+preserving only the bits that meet this criterion.
+
+```solidity
+uint256 n1 = 12; // 01100
+uint256 n2 = 24; // 11000
+// Only the 4th bit has 1 in both cases; the other bits are set to 0.
+                //  01000 = 8
+uint256 andResult = n1 & n2;
+```
+
+Conversely, the "|" operator also takes two numbers as inputs but identifies the
+bit positions where only one of them has a 1 (hence its name, "or"). It creates
+and returns a new value based on this criterion.
+
+```solidity
+uint256 n1 = 12; // 01100
+uint256 n2 = 24; // 11000
+// The third and fifth positions have different values, so we keep them.
+                //  10100 = 28
+uint256 orResult = n1 | n2;
+```
+
+These bitwise operations are powerful tools for customizing data storage and
+optimizing gas costs in Solidity smart contract development. This two operators
+are used for _bitmasking_ usually.
+
+#### _3.2 Bitwise SHL("&laquo;") and SHR("&raquo;") operations_
+
+<span id='3-1-bitwise-<<-and->>-operations'></span>
+
+The SHL (shift-left) operator shifts all bit values one position to the left.
+This effectively multiplies the number by 2, as it adds a 0 bit on the right.
+
+```solidity
+//...000010111
+uint256 n = 23;
+//we shift every value one position to the left
+//...000101110
+n = n << 1; // =46
+```
+
+Conversely, the SHR (shift-right) operator shifts all bit values one position to
+the right. This operation effectively divides the number by 2, as it removes the
+rightmost bit.
+
+```solidity
+//...000010111
+uint256 n = 23;
+//we shift every value one position to the right
+//...000001011
+n = n >> 1; // = 11
+```
+
+As you might have noticed, each left shift doubles the value, and each right
+shift halves it. These operators are particularly useful when you need to
+perform multiplications or divisions by powers of two, leading to gas savings in
+the process.
+
+#### _3.3 Bitwise NOT("~") operations_
+
+<span id='3-3-bitwise-~-operations'></span>
+
+The concept is straightforward: the bitwise NOT operation inverts the bits of a
+value, turning 1s into 0s and vice versa.
+
+```
+//...00000000000000001
+uint256 n = 1;
+// Inverted bits: 11111111111111110
+n = ~n; // =131070
+```
+
+## 4.Bit Manipulation Techniques
+
+<span id='4-bit-manipulation-techniques'></span>
+
+#### _4.1 Accessing a specific set of bits_
+
+<span id='4-1-accessing-a-specific-set-of-bits'></span>
+
+In this section, we will delve deeper into advanced bit manipulation techniques.
+Now that we have covered the basics, let's apply our knowledge to extract and
+modify specific bits from a bitmap. We will revisit the AAVE example for
+practical insights:
+
+```solidity
+ struct ReserveConfigurationMap {
+    //bit 0-15: LTV
+    //bit 16-31: Liq. threshold
+    //bit 32-47: Liq. bonus
+    //bit 48-55: Decimals
+    //bit 56: Reserve is active
+    //bit 57: Reserve is frozen
+    //bit 58: Borrowing is enabled
+    //bit 59: Stable rate borrowing enabled
+    //bit 60-63: Reserved
+    //bit 64-79: Reserve factor
+    uint256 data;
+  }
+```
+
+Suppose we want to read `decimals` (from bit 48 to 55). To accomplish this, we
+employ the following approach:
+
+Two values are defined:
+
+- **RESERVE_DECIMALS_START_BIT_POSITION**: the starting position of decimals:48
+- **DECIMALS_MASK** : a mask that makes easier to read the bits we want
+
+```solidity
+ uint256 constant RESERVE_DECIMALS_START_BIT_POSITION = 48;
+```
+
+```solidity
+ // binary representation : 111...111111111100000000111111111111111111111111111111111111111111111111
+ uint256 constant DECIMALS_MASK = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00FFFFFFFFFFFF;
+```
+
+Now, let's examine the `getDecimals` function:
+
+```solidity
+  function getDecimals(DataTypes.ReserveConfigurationMap storage self)
+  internal
+  view
+  returns (uint256)
+  {
+    return (self.data & ~DECIMALS_MASK) >> RESERVE_DECIMALS_START_BIT_POSITION;
+  }
+  // mock data :
+  //...101110101000101101100010101110111111110100011000111110011000110111
+  // inverted mask (~DECIMALS_MASK):
+  //...000000000011111111000000000000000000000000000000000000000000000000
+
+  // self.data & ~DECIMALS_MASK
+  //...000000000000101101000000000000000000000000000000000000000000000000
+  // >> RESERVE_DECIMALS_START_BIT_POSITION
+  // Result: Decimal Value                           ..000000000000101101
+```
+
+To summarize:
+
+1. The function begins by executing a bitwise AND operation between self.data
+   (which contains the configuration map) and the DECIMALS_MASK. This operation
+   effectively sets all the bits representing the decimals to 0, allowing us to
+   write new values to those bits.
+
+2. To obtain the actual decimal value, it shifts the result 48 positions to the
+   right (`>> RESERVE_DECIMALS_START_BIT_POSITION`). This step aligns the
+   extracted bits with the least significant position (the rightmost side),
+   allowing you to obtain and read the `decimals`.
+
+This technique efficiently extracts and interprets the desired bits,
+demonstrating the power of bitwise operations in smart contract development.
+
+#### _4.2 Modifying a specific set of bits_
+
+<span id='4-2-modifying-a-specific-set-of-bits'></span>
+
+Now, let's delve into how to modify the `decimals` in the code:
+
+```solidity
+ function setDecimals(DataTypes.ReserveConfigurationMap memory self, uint256 decimals)
+    internal
+    pure
+  {
+    require(decimals <= MAX_VALID_DECIMALS, Errors.RC_INVALID_DECIMALS);
+    self.data = (self.data & DECIMALS_MASK) | (decimals << RESERVE_DECIMALS_START_BIT_POSITION);
+  }
+```
+
+1. The function begins by executing a bitwise AND operation between `self.data`
+   (which contains the configuration map) and the `DECIMALS_MASK`. This
+   operation effectively sets all the bits representing the `decimals` to 0,
+   allowing us to write new values to those bits.
+
+2. To write the new decimal value bits, it performs a bitwise OR operation with
+   the new value, shifted left by `RESERVE_DECIMALS_START_BIT_POSITION`
+   positions. This ensures that only the bits corresponding to the `decimals`
+   are modified, leaving the rest of the bitmap intact.
+
+   These techniques showcase how to efficiently extract and modify specific bits
+   within a binary structure, further highlighting the versatility of bitwise
+   operations in smart contract development.
+
+## 5. Conclusion
+
+As a Solidity developer, understanding and harnessing the power of bit
+manipulation can set you apart. It empowers you to create smart contracts that
+not only function efficiently but also save on gas costs, making your
+applications more accessible and affordable for users.
+
+In conclusion, bit manipulation in Solidity is not just a technique; it's a
+mindset. It's a mindset that values efficiency, precision, and economy. By
+mastering the art of bit manipulation, you can create blockchain applications
+that are not just functional but also sustainable in a gas-constrained
+environment. So, embrace the power of bit manipulation, and watch your smart
+contracts soar while your gas costs plummet. Happy coding!
+
+## 6.References.
+
+- [https://github.com/aave/protocol-v2/tree/master](https://github.com/aave/protocol-v2/tree/master)
+- [https://www.youtube.com/watch?v=82cmOkd0b24](https://www.youtube.com/watch?v=82cmOkd0b24)

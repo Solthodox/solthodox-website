@@ -1,5 +1,6 @@
 import { Post } from './components/post'
 import { pages } from '../../statics'
+
 export default function Home(): JSX.Element {
   return (
     <>

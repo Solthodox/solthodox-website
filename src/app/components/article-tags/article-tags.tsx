@@ -30,6 +30,12 @@ export const ArticleTags: FC<Props> = props => {
         >
           #defi
         </Link>
+        <Link
+          className='mr-1 cursor-pointer text-sm text-gray-500 hover:text-secondary'
+          href='/articles/tag/solidity'
+        >
+          #solidity
+        </Link>
       </div>
     </aside>
   )
