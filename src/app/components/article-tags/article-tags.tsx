@@ -14,9 +14,9 @@ export const ArticleTags: FC<Props> = props => {
       <div className='flex flex-wrap'>
         <Link
           className='mr-1 cursor-pointer text-sm text-gray-500 hover:text-secondary'
-          href='/articles/tag/non-techical'
+          href='/articles/tag/non-technical'
         >
-          #non-techical
+          #non-technical
         </Link>
         <Link
           className='mr-1 cursor-pointer text-sm text-gray-500 hover:text-secondary'
@@ -35,6 +35,12 @@ export const ArticleTags: FC<Props> = props => {
           href='/articles/tag/solidity'
         >
           #solidity
+        </Link>
+        <Link
+          className='mr-1 cursor-pointer text-sm text-gray-500 hover:text-secondary'
+          href='/articles/tag/economics'
+        >
+          #economics
         </Link>
       </div>
     </aside>

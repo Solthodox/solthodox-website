@@ -1,6 +1,7 @@
 import { ReactElement } from 'react'
 import UniswapV4DeepDive from './src/content/uniswapv4-deep-dive.mdx'
 import ExploringBitManipulationInSmartContracts from './src/content/exploring-bit-manipulation-in-smart-contracts.mdx'
+import AnalysingNextBullrun from './src/content/analysing-the-next-bullrun.mdx'
 import About from './src/content/about.mdx'
 import Work from './src/content/work.mdx'
 import Experience from './src/content/experience.mdx'
@@ -8,6 +9,8 @@ import UnicornLight from '/public/unicorn-light.png'
 import UnicornDark from '/public/unicorn-dark.png'
 import MagicianLight from '/public/magician-light.png'
 import MagicianDark from '/public/magician-dark.png'
+import BearLight from '/public/bear-light.png'
+import BearDark from '/public/bear-dark.png'
 
 import { StaticImageData } from 'next/image'
 interface Post {
@@ -106,6 +109,30 @@ export const publications: Post[] = [
     imgSourceLight: MagicianLight,
     imgSourceDark: MagicianDark,
     mdx: <ExploringBitManipulationInSmartContracts />,
+    contents: [
+      '1.Introduction',
+      '2.Understanding Bits in Solidity',
+      '2.1.Bits explained',
+      '2.2.Why Bit Manipulation in Solidity',
+      '3.Basic Bitwise Operations',
+      '3.1.Bitwise & and | oeprations',
+      '3.2.Bitwise << and >> oeprations',
+      '3.3.Bitwise ~ operatoions',
+      '4.Bit Manipulation Techniques',
+      '4.1.Accessing a specific set of bits',
+      '4.2.Modifying a specific set of bits',
+      '5.Conclusion',
+      '6.References:'
+    ]
+  },
+  {
+    title: 'Analysing the next bullrun',
+    metadata: { date: 'Sept 26, 2023', tags: ['non-technical', 'economics'] },
+    description:
+      "In this comprehensive article, we delve deep into the cryptocurrency market, exploring the factors that could trigger the next crypto bull run and shape its magnitude. From economic influences like inflation and institutional investment to the impact of evolving regulations, we dissect the dynamics at play. We also unravel the relationship between Bitcoin's cycles and broader crypto trends and analyze historical patterns for insights.",
+    imgSourceLight: BearLight,
+    imgSourceDark: BearDark,
+    mdx: <AnalysingNextBullrun />,
     contents: [
       '1.Introduction',
       '2.Understanding Bits in Solidity',
