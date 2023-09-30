@@ -16,7 +16,7 @@ export const PostHeader: FC<Props> = props => {
   const { theme, setTheme } = useTheme()
   return (
     <header>
-      <h1>{title}</h1>
+      <h1 className='text-left'>{title}</h1>
       <h3>
         {metadata.date}{' '}
         {metadata.tags !== null && (

@@ -1,7 +1,7 @@
 import { type FC } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import Avatar from '../../../../public/avatar.png'
+import Avatar from '/public/avatar.png'
 
 export const Pfp: FC = () => {
   return (
