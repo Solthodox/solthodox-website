@@ -122,7 +122,7 @@ export const publications: Post[] = [
       '4.1.Accessing a specific set of bits',
       '4.2.Modifying a specific set of bits',
       '5.Conclusion',
-      '6.References:'
+      '6.References'
     ]
   },
   {
@@ -134,22 +134,28 @@ export const publications: Post[] = [
     imgSourceDark: BearDark,
     mdx: <AnalysingNextBullrun />,
     contents: [
-      '1.Introduction',
-      '2.Understanding the Crypto Market Dynamics',
-      '2.1.Volatility',
-      '2.2.The Historical Significance of Bull Runs in Cryptocurrency',
-      '2.3.Importance of analysis',
-      '3.Economic Factors Fueling the Next Bull Run',
-      '3.1.Inflation and devaluation of fiat currencies',
-      '3.2.Institutional interest and investment',
-      '3.3.Global economic instability and uncertainty',
-      '3.4.Central bank interest rates',
-      '4.Regulatory Environment and its Impact',
-      '5.Bitcoin Cycles and Their Role',
-      '4.1.Accessing a specific set of bits',
-      '4.2.Modifying a specific set of bits',
-      '5.Conclusion',
-      '6.References:'
+      "1.Introduction",
+      "2.Understanding the Crypto Market Dynamics",
+      "2.1.Volatility",
+      "2.2.The Historical Significance of Bull Runs in Cryptocurrency",
+      "2.3.Importance of Analysis",
+      "3.Economic Factors",
+      "3.1.Inflation and the devaluation of fiat currencies",
+      "3.2.Institutional interest and investment",
+      "3.3.Global economic instability and uncertainty",
+      "3.4.Central bank interest rates",
+      "4.Regulatory Environment and Its Impact",
+      "5.Bitcoin as a mainstay of the markets",
+      "5.1.Bitcoin market capitalization",
+      "5.2.Bitcoin halving cycles",
+      "6.Potential Challenges and Risks",
+      "6.1.Regulatory Uncertainty",
+      "6.2.Market Volatility",
+      "6.3.Lack of Fundamental Valuation",
+      "6.4.Security Risks",
+      "6.5.Speculative Investments",
+      "7.Conclusion and Future Outlook",
+      "8.References",
     ]
-  }
+}
 ]
