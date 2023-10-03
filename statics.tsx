@@ -1,6 +1,7 @@
 import { ReactElement } from 'react'
 import UniswapV4DeepDive from './src/content/uniswapv4-deep-dive.mdx'
 import ExploringBitManipulationInSmartContracts from './src/content/exploring-bit-manipulation-in-smart-contracts.mdx'
+import AnalysingNextBullrun from './src/content/analysing-the-next-bullrun.mdx'
 import About from './src/content/about.mdx'
 import Work from './src/content/work.mdx'
 import Experience from './src/content/experience.mdx'
@@ -8,6 +9,8 @@ import UnicornLight from '/public/unicorn-light.png'
 import UnicornDark from '/public/unicorn-dark.png'
 import MagicianLight from '/public/magician-light.png'
 import MagicianDark from '/public/magician-dark.png'
+import BearLight from '/public/bear-light.png'
+import BearDark from '/public/bear-dark.png'
 
 import { StaticImageData } from 'next/image'
 interface Post {
@@ -119,7 +122,40 @@ export const publications: Post[] = [
       '4.1.Accessing a specific set of bits',
       '4.2.Modifying a specific set of bits',
       '5.Conclusion',
-      '6.References:'
+      '6.References'
     ]
-  }
+  },
+  {
+    title: 'Analysing the next bullrun',
+    metadata: { date: 'Sept 26, 2023', tags: ['non-technical', 'economics'] },
+    description:
+      "In this comprehensive article, we delve deep into the cryptocurrency market, exploring the factors that could trigger the next crypto bull run and shape its magnitude. From economic influences like inflation and institutional investment to the impact of evolving regulations, we dissect the dynamics at play. We also unravel the relationship between Bitcoin's cycles and broader crypto trends and analyze historical patterns for insights.",
+    imgSourceLight: BearLight,
+    imgSourceDark: BearDark,
+    mdx: <AnalysingNextBullrun />,
+    contents: [
+      "1.Introduction",
+      "2.Understanding the Crypto Market Dynamics",
+      "2.1.Volatility",
+      "2.2.The Historical Significance of Bull Runs in Cryptocurrency",
+      "2.3.Importance of Analysis",
+      "3.Economic Factors",
+      "3.1.Inflation and the devaluation of fiat currencies",
+      "3.2.Institutional interest and investment",
+      "3.3.Global economic instability and uncertainty",
+      "3.4.Central bank interest rates",
+      "4.Regulatory Environment and Its Impact",
+      "5.Bitcoin as a mainstay of the markets",
+      "5.1.Bitcoin market capitalization",
+      "5.2.Bitcoin halving cycles",
+      "6.Potential Challenges and Risks",
+      "6.1.Regulatory Uncertainty",
+      "6.2.Market Volatility",
+      "6.3.Lack of Fundamental Valuation",
+      "6.4.Security Risks",
+      "6.5.Speculative Investments",
+      "7.Conclusion and Future Outlook",
+      "8.References",
+    ]
+}
 ]
