@@ -36,7 +36,7 @@ export const pages = {
   },
   experience: {
     title: 'Experience',
-    metadata: { date: 'Aug 23, 2023', tags: null },
+    metadata: { date: 'Nov 18, 2023', tags: null },
     description: 'See the projects Solthodox has worked on',
     imgSourceLight: null,
     imgSourceDark: null,
